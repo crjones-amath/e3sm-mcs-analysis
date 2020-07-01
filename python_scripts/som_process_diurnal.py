@@ -11,11 +11,11 @@ import os.path
 
 debug = True
 
-model = 'e3sm'
+model = 'mmf'
 if 'mmf' in model.lower():
     # E3SM-MMF
     case_prefix = 'earlyscience.FC5AV1C-H01A.ne120.sp1_64x1_1000m.3d.'
-    out_dir_remap = '/global/cscratch1/sd/crjones/conus/e3sm-mmf/'
+    out_dir_remap = '/global/project/projectdirs/m3312/crjones/e3sm/early_science/3hourly_3d_hist/conus/daily/'
     out_prefix = 'earlyscience.FC5AV1C-H01A.ne120.sp1_64x1_1000m.850hpa.'
 else:
     # E3SM
@@ -123,7 +123,7 @@ def process_from_file_template(the_date,
 
 
 def main(do_parallel=True):
-    files_to_process = sorted(glob(out_dir_remap + "*.000[13]-*.nc"))
+    files_to_process = sorted(glob(out_dir_remap + "*.nc"))
     dates_to_process =  [f.split('.')[-3] if 'conus.nc' in f.lower()   # selects yyyy-mm-dd from $case.yyyy-mm-dd.conus.nc
                          else f.split('.')[-2][:10] for f in files_to_process]  # selects yyyy-mm-dd from $case.yyyy-mm-dd.nc
     print(files_to_process)

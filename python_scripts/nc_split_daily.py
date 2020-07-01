@@ -9,31 +9,48 @@ from concurrent.futures import ProcessPoolExecutor
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
 
 
-# years = ['0003', '0004', '0005', '0006', '0007']
-# start_dates = ['0003-12-01', None, None, None, None] man
+years = ['0002', '0003', '0004', '0005', '0006', '0007']
+# years = ['0001', '0003']
 
-years = ['0002']
-start_dates = ['0002-02-25']
+start_dates = [None] * len(years)
 
-# MMF
+# years = ['0002']
+# start_dates = ['0002-02-25']
+
+# ########################
+# E3SM - MMF
+# ########################
 # path_out = '/global/project/projectdirs/m3312/crjones/e3sm/early_science/hourly_2d_hist/remap/daily/'
 # out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.sp1_64x1_1000m.cam.h1.'
 # path_in = '/global/project/projectdirs/m3312/crjones/e3sm/early_science/hourly_2d_hist/remap/'
 
-# E3SM
-path_out = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/hourly_2d_hist/remap/daily/'
-out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.E3SM.cam.h1.'
-path_in = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/hourly_2d_hist/remap/'
+# for 3D processing
+path_out = '/global/cscratch1/sd/crjones/conus/e3sm-mmf/daily/'
+path_in = '/global/cscratch1/sd/crjones/conus/e3sm-mmf/'
+out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.sp1_64x1_1000m.3d.'
 
-path_out = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/3hourly_3d_hist/conus/daily/'
-path_in = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/3hourly_3d_hist/conus/'
-out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.E3SM.3d.'
+
+# ########################
+# E3SM
+# ########################
+# for 2D processing
+# path_out = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/hourly_2d_hist/remap/daily/'
+# out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.E3SM.cam.h1.'
+# path_in = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/hourly_2d_hist/remap/'
+
+# for 3D processing
+# path_out = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/3hourly_3d_hist/conus/daily/'
+# path_in = '/global/project/projectdirs/m3312/crjones/e3sm/early_science_e3sm/3hourly_3d_hist/conus/'
+# out_name = path_out + 'earlyscience.FC5AV1C-H01A.ne120.E3SM.3d.'
 
 files_in = sorted(glob.glob(path_in + '*.nc'))
-dates_in = [f.split('.')[-3][:10] for f in files_in]  # selects yyyy-mm-dd from $case.yyyy-mm-dd-sssss.nc
+dates_in = [f.split('.')[-3][:10] if 'conus.nc' in f.lower()  # selects yyyy-mm-dd from $case.yyyy-mm-dd-sssss.conus.nc
+            else f.split('.')[-2][:10] for f in files_in]     # selects yyyy-mm-dd from $case.yyyy-mm-dd-sssss.nc
 years_in = {d[0:4] for d in dates_in}
 files_by_year = {y: [f for f in files_in if y in f] for y in years_in}
 dates_by_year = {y: [d for d in dates_in if y in d] for y in years_in}
+
+assert(path_out != path_in)  # make sure you don't accidentally clobber anything
 
 def file_list_for_given_year(year, start_date=None):
     # may need to grab one of the previous year as well, since 000{n}-12-31 will run over into 000{n+1}
@@ -47,7 +64,8 @@ def file_list_for_given_year(year, start_date=None):
         prepend = [files_by_year[prior_year][-1]] if prior_year in years_in else []
         return prepend + file_list
 
-def main():    
+def main():
+    """ Original (now obsolete version) that frequently crashed """
     # loop over years, split into daily files
     for yr, start_date in zip(years, start_dates):
         print('Processing year ', yr)
@@ -62,7 +80,6 @@ def main():
             print('First file: ' + out_to_do[0])
             print('Last file: ' + out_to_do[-1])
             xr.save_mfdataset(dsets_to_do, out_to_do)
-            
 
 def split_file_to_daily(fname):
     ds = xr.open_dataset(fname)
@@ -77,7 +94,9 @@ def split_file_to_daily(fname):
         xr.save_mfdataset(dsets_to_do, out_to_do)
 
 def main_alt(do_parallel=True, max_workers=8):
-    """Previous version dies a lot, so try alternate approach ..."""
+    """ Loads all files matching {path_in}/*{year}*.nc for year in specified list years
+    and splits into daily files  {out_name}.yyyy-mm-dd.nc
+    """
     for yr, start_date in zip(years, start_dates):
         print('Processing year ', yr)
         files_to_check = file_list_for_given_year(yr, start_date=start_date)
@@ -89,12 +108,7 @@ def main_alt(do_parallel=True, max_workers=8):
                 split_file_to_daily(fname)
 
 if __name__ == "__main__":
-    # cluster = LocalCluster(n_workers=6)
-    # client = Client()
-
-    # main()
-    
-    # this version is much faster when it is known that each file 
+    # this version is much faster than using `main()` when it is known that each file 
     # contains full days (i.e., no day's output is split across multiple files)
     main_alt(do_parallel=True)
 

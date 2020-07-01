@@ -143,7 +143,7 @@ def split_file_to_daily(ds, out_name_prefix, out_suffix='.CONUS.nc'):
     xr.save_mfdataset(dsets, out_files)
         
 def main(do_parallel=True):
-    the_dates = [f.split('.')[-2] for f in sorted(glob.glob(case3_topdir + "*.000[67]-*.nc"))]  # 'yyyy-mm-dd-sssss'
+    the_dates = [f.split('.')[-2] for f in sorted(glob.glob(case3_topdir + "*.0005-[01][90]*.nc"))]  # 'yyyy-mm-dd-sssss'
     print(the_dates)
     if not do_parallel:
         for date in the_dates[0:2]:

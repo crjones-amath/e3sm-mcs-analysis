@@ -19,9 +19,9 @@ if 'mmf' in model.lower():
     out_prefix = 'earlyscience.FC5AV1C-H01A.ne120.sp1_64x1_1000m.850hpa.'
 else:
     # E3SM
-    case_prefix = 'earlyscience.FC5AV1C-H01A.ne120.E3SM.3d.'
-    out_dir_remap = '/global/cscratch1/sd/crjones/conus/e3sm/'
-    out_prefix = 'earlyscience.FC5AV1C-H01A.ne120.E3SM.850hpa.'
+    # case_prefix = 'earlyscience.FC5AV1C-H01A.ne120.E3SM.3d.'
+    # out_dir_remap = '/global/cscratch1/sd/crjones/conus/e3sm/'
+    # out_prefix = 'earlyscience.FC5AV1C-H01A.ne120.E3SM.850hpa.'
 
     # E3SM
     case_prefix = 'earlyscience.FC5AV1C-H01A.ne120.E3SM.3d.'
@@ -30,7 +30,7 @@ else:
 
 
 
-out_dir = out_dir_remap + 'tmp/'
+out_dir = out_dir_remap + 'p850/'
 
 # For interpolation
 @njit
@@ -123,9 +123,9 @@ def process_from_file_template(the_date,
 
 
 def main(do_parallel=True):
-    # files_to_process = sorted(glob(case3_topdir + "*.000[67]-[01][34567890]-*.nc"))
-    files_to_process = sorted(glob(out_dir_remap + "*.nc"))
-    dates_to_process = [f.split('.')[-2] for f in files_to_process]
+    files_to_process = sorted(glob(out_dir_remap + "*.000[13]-*.nc"))
+    dates_to_process =  [f.split('.')[-3] if 'conus.nc' in f.lower()   # selects yyyy-mm-dd from $case.yyyy-mm-dd.conus.nc
+                         else f.split('.')[-2][:10] for f in files_to_process]  # selects yyyy-mm-dd from $case.yyyy-mm-dd.nc
     print(files_to_process)
     print(dates_to_process)
 
@@ -133,7 +133,7 @@ def main(do_parallel=True):
         process_from_file_template(dates_to_process[0])  # test
     else:
         # remap the files
-        with ProcessPoolExecutor(max_workers=6) as Executor:
+        with ProcessPoolExecutor(max_workers=8) as Executor:
             Executor.map(process_from_file_template, dates_to_process)
 
     
